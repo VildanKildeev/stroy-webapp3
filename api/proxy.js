@@ -1,40 +1,37 @@
-// api/proxy.js
-import { NextResponse } from 'next/server';
-import axios from 'axios';
-import cheerio from 'cheerio';
+// /api/proxy.js
+export default async function handler(req, res) {
+  const { method = "getUpdates" } = req.query;
 
-export async function GET() {
+  const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN; // настрой в Vercel
+  const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID; // -100... ID канала
+
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+    return res.status(500).json({ error: "TELEGRAM_BOT_TOKEN или TELEGRAM_CHAT_ID не заданы" });
+  }
+
   try {
-    const { data } = await axios.get('https://t.me/s/stojpoKarmanu', {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-      }
-    });
-    const $ = cheerio.load(data);
-    const posts = [];
+    // Получаем сообщения канала
+    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates`;
+    const tgRes = await fetch(url);
+    const tgData = await tgRes.json();
 
-    $('.tgme_widget_message').each((i, el) => {
-      const $el = $(el);
-      const date = $el.find('.tgme_widget_message_date time').attr('datetime');
-      const text = $el.find('.tgme_widget_message_text').text().trim();
-      const photo = $el.find('.tgme_widget_message_photo_wrap').css('background-image') || null;
-      
-      if (text) {
-        posts.push({ 
-          date, 
-          text, 
-          photo: photo ? photo.replace('url("', '').replace('")', '') : null 
-        });
-      }
-    });
+    if (!tgData.ok) {
+      return res.status(500).json({ error: "Ошибка Telegram API", details: tgData });
+    }
 
-    return NextResponse.json({ success: true, posts });
-  } catch (e) {
-    console.error('Proxy error:', e);
-    return NextResponse.json({ 
-      success: false, 
-      error: 'Failed to fetch posts',
-      details: e.message 
-    }, { status: 500 });
+    // Фильтруем только сообщения из нужного канала
+    const messages = tgData.result
+      .filter(u => u.message && u.message.chat && u.message.chat.id.toString() === TELEGRAM_CHAT_ID)
+      .map(u => ({
+        text: u.message.text || "",
+        date: u.message.date,
+        photos: u.message.photo || [],
+      }))
+      .sort((a, b) => b.date - a.date); // последние сверху
+
+    res.status(200).json({ ok: true, messages });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Ошибка сервера", details: err.message });
   }
 }
