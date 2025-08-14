@@ -1204,7 +1204,7 @@
     <script>
         // ✅ Константы
         const FORMSPREE_URL = "https://formspree.io/f/xdkdbnnz";
-        const VERCEL_PROXY_URL = 'https://stroy-webapp.vercel.app/api/proxy'; // Для доски объявлений
+        const VERCEL_PROXY_URL = 'https://stroy-webapp3.vercel.app/api/proxy';
 
         let selectedCity = null;
         let currentPage = 'main';
@@ -1428,7 +1428,7 @@
 *Контакт:* ${currentUserName}, ${currentUserPhone}
             `;
 
-            // Отправляем через наш прокси
+            // Отправляем через прокси
             fetch('/api/forward', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
