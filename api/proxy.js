@@ -30,9 +30,9 @@ export async function GET() {
 
     return NextResponse.json({ success: true, posts });
   } catch (error) {
-    console.error('Ошибка парсинга канала:', error.message);
+    console.error('Ошибка:', error.message);
     return NextResponse.json(
-      { success: false, error: 'Не удалось загрузить канал' },
+      { success: false, error: 'Server error' },
       { status: 500 }
     );
   }
